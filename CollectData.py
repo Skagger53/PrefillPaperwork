@@ -66,7 +66,8 @@ class CollectData:
             self.zip
         )
 
-
+    # Gets relevant data from user based on which forms are required
+    # True parameters (forms to fill) sets all relevant attributes to False (e.g., if packet = True, all self.packet_req attributes will be set to False). Then every attribute is looped through, and all False attributes are obtained from user.
     def obtain_data(self, _1503 = False, _4461 = False, packet = False):
         # Sets relevant data points to False, indicating they are unassigned but required
         # (Data points that are None are unassigned and unrequired.)
