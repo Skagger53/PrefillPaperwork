@@ -199,7 +199,7 @@ class CollectData:
             f"Please enter {self.all_data_points[valid_input - 1][1]}:\n"
         )
 
-    def clear_console: os.system('cls')
+    def clear_console(self): os.system('cls')
 
     # User has selected a specific PDF to generate
     def select_one_pdf(self):
