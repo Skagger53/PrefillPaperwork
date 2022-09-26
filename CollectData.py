@@ -1,5 +1,6 @@
 import datetime
 import sys
+import os
 
 from DataValidation import DataValidation
 from OutputPDFs import OutputPDFs
@@ -18,6 +19,13 @@ class CollectData:
             "2": ["MA packet", self.packet],
             "3": ["4461", self._4461]
         }
+        self.must_be_caps = (
+            "gender (M/F)",
+            "PAS number",
+            "home address state abbreviation (e.g., 'MN', 'WI')",
+            "primary diagnosis ICD-10 code",
+            "secondary diagnosis ICD-10 code"
+        )
 
         # Sets all data point elements.
         # Also sets 0-index to None, which is where user input will be stored.
@@ -32,10 +40,10 @@ class CollectData:
             if _1503 is True:
                 for data_point in self._1503_req:
                     if data_point[0] == None: data_point[0] = False
-            elif _4461 is True:
+            if _4461 is True:
                 for data_point in self._4461_req:
                     if data_point[0] == None: data_point[0] = False
-            elif packet is True:
+            if packet is True:
                 for data_point in self.packet_req:
                     if data_point[0] == None: data_point[0] = False
 
@@ -80,7 +88,7 @@ class CollectData:
 
             # User input evaluated against string data point (includes regex option for SSN)
             if data_point[2] == str or data_point[2] == "regex":
-                data_point[0] = input(input_text).strip()
+                data_point[0] = input(f"\n{input_text}").strip()
                 if data_point[0] == "": # Empty string permitted
                     data_point[0] = False
                     return
@@ -92,9 +100,11 @@ class CollectData:
                     # Arguments are user input and relevent regex code
                     data_point[0] = self.check_regex_input(data_point[0], data_point[3])
 
+                if data_point[1] in self.must_be_caps: data_point[0] = data_point[0].upper()
+
             # User input evaluated against datetime data point
             elif data_point[2] == datetime.datetime:
-                user_input = input(input_text)
+                user_input = input(f"\n{input_text}").strip()
                 if user_input == "":
                     data_point[0] = False
                     return
@@ -111,7 +121,7 @@ class CollectData:
 
             # User input evaluated against integer data point
             elif data_point[2] == int:
-                user_input = input(input_text).strip().lower()
+                user_input = input(f"\n{input_text}").strip().lower()
                 if user_input == "exit": sys.exit()
                 if user_input == "back": return "back"
 
@@ -134,7 +144,7 @@ class CollectData:
             elif data_point[2] == "custom":
                 while data_point[0] == False: # False means currently unassigned but required
                     # Obtains user's input, validated against list/tuple
-                    user_input = input(input_text)
+                    user_input = input(f"\n{input_text}").strip()
                     if user_input == "":
                         data_point[0] = False
                         return
@@ -150,10 +160,13 @@ class CollectData:
                     if data_point[0] == False: input("\nPlease enter a valid input.\n\n(Press Enter.)\n")
                     if data_point[0] == "exit": sys.exit()
 
+                if data_point[1] in self.must_be_caps: data_point[0] = data_point[0].upper()
+
         return data_point
 
     # Allows user to change a specific data point (if perhaps they typed something incorrectly)
     def change_data_point(self):
+        self.clear_console()
         input_text = "Which data point do you want to change?\n"
 
         valid_input = False
@@ -186,6 +199,8 @@ class CollectData:
             f"Please enter {self.all_data_points[valid_input - 1][1]}:\n"
         )
 
+    def clear_console: os.system('cls')
+
     # User has selected a specific PDF to generate
     def select_one_pdf(self):
         # Lists all PDF options
@@ -209,13 +224,13 @@ class CollectData:
         # Obtains relevant data for only the PDF the user wants
         if self.obtain_data(
                 _1503 = self.all_pdf_options["1"][1],
-                _4461 = self.all_pdf_options["2"][1],
-                packet = self.all_pdf_options["3"][1]
+                 packet = self.all_pdf_options["2"][1],
+                _4461 = self.all_pdf_options["3"][1]
         ) == "back": return
         self.output_pdfs(
             _1503 = self.all_pdf_options["1"][1],
-            _4461 = self.all_pdf_options["2"][1],
-            packet = self.all_pdf_options["3"][1]
+            packet = self.all_pdf_options["2"][1],
+            _4461 = self.all_pdf_options["3"][1]
         )
 
     def test(self):
@@ -233,7 +248,7 @@ class CollectData:
             if data_point[0] != None and data_point[0] is not False:
                 print(f"{data_point[1][0].upper() + data_point[1][1:]}: {data_point[0]}")
                 listed_count += 1
-        if listed_count == 0: print("(No data points entered.)")
+        if listed_count == 0: print("(\nNo data points entered.)")
 
         input("\nPress Enter.\n")
 
@@ -296,7 +311,7 @@ class CollectData:
         self.prim_dx = [None, "primary diagnosis text description", str]
         self.prim_dx_code = [None, "primary diagnosis ICD-10 code", str]
         self.sec_dx = [None, "secondary diagnosis text description", str]
-        self.sec_dx_code = [None, "primary diagnosis ICD-10 code", str]
+        self.sec_dx_code = [None, "secondary diagnosis ICD-10 code", str]
         self.pas = [None, "PAS number", str]
         self.hosp_name = [None, "discharging hospital name", str]
         self.hosp_adm_date = [None, "discharging hospital admission date", datetime.datetime]

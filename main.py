@@ -1,4 +1,5 @@
 import sys
+import os
 
 from CollectData import CollectData
 from DataValidation import DataValidation
@@ -19,6 +20,7 @@ main_menu = {
 # Main menu
 exit_menu = False
 while exit_menu == False:
+    CollectData.clear_console()
     # Prints menu options
     for option in main_menu: print(f"{option}: {main_menu[option][0]}")
     # DataValidation module used to allow or disallow user input
