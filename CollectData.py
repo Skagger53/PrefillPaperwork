@@ -10,29 +10,24 @@ class CollectData:
         self.OutputPDFs = OutputPDFs()
 
         # Custom options used by self.data_validation for user input
-        self.gender_options = ("M", "m", "F", "f")
+        self.gender_options = ("M", "F")
         self.state_options = ("AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY")
+        self._1503, self._4461, self.packet = False, False, False
         self.all_pdf_options = {
-            "1": "1503",
-            "2": "MA packet",
-            "3": "4461"
+            "1": ["1503", self._1503],
+            "2": ["MA packet", self.packet],
+            "3": ["4461", self._4461]
         }
 
-        # None indicates unassigned and unrequired
-        # False indicates unassigned and required
+        # Sets all data point elements.
+        # Also sets 0-index to None, which is where user input will be stored.
         self.reset_data_points()
 
-    # Gets relevant data from user based on which forms are required
-    # Parameters that are True indicates required forms to fill
-    # Any required form to fill will change all relevant attributes (data points) from None to False (e.g., if packet = True, all self.packet_req attributes will be set to False).
-    # Every attribute is looped through, and all attributes != None are required from the user. Attributes == None are ignored.
+    # Gets relevant data from user based on which forms they want to complete
     def obtain_data(self, _1503 = False, _4461 = False, packet = False):
-        # Sets relevant data points to False, indicating they are unassigned but required
+        # For a form the user wants to complete, this sets relevant data points to False, indicating they are unassigned but required
         # (Data points that are None are unassigned and unrequired.)
-        if _1503 is False and _4461 is False and packet is False: return
-        elif _1503 is True and _4461 is True and packet is True:
-            for data_point in self.all_data_points:
-                if data_point[0] == None: data_point[0] = False
+        if _1503 is False and _4461 is False and packet is False: return # No selection made (shouldn't happen)
         else:
             if _1503 is True:
                 for data_point in self._1503_req:
@@ -45,20 +40,17 @@ class CollectData:
                     if data_point[0] == None: data_point[0] = False
 
         # Gets user input for all required data points
+        # Every data point is looped through, and all attributes != None are required from the user. Attributes == None are ignored.
         for data_point in self.all_data_points:
             input_text = f"Please enter {data_point[1]}:\n"
             if data_point[0] == None: continue # Unrequired data point
-            data_point = self.obtain_data_point(data_point, input_text)
+            data_point = self.obtain_data_point(data_point, input_text) # Empty string permitted
             if data_point == "back":
                 data_point = None
                 return "back"
 
-            # I think all exit commands are handled withing obtain_data_point()...
-            # if type(data_point[0]) == str:
-            #     if data_point[0] == "exit": sys.exit()
-
     # Checks user input against regular expression.
-    # Used for SSN, so straight integer input is acceptable.
+    # Only used for SSN, so straight integer input is acceptable.
     def check_regex_input(self, user_input, regex):
         try: int(user_input)
         except ValueError: # If not an integer, evaluates against regex
@@ -69,36 +61,38 @@ class CollectData:
                 allow_exit = True
             )
 
-            # Must != int and have passed through regex check
+            # To be here, must != int and have passed through regex check. If invalid, must == False
             if user_input != False: # False means failed regex check
                 if user_input == "exit": sys.exit()
         else: # Must have passed as an integer. Now testing length (must be 9 digits)
-            user_input = str(user_input)
             if len(user_input) != 9: user_input = False
             else:
                 user_input = user_input[:3] + "-" + user_input[3:5] + "-" + user_input[5:]
 
+        # Returns False if regex check failed or if integer check passed but length check failed
+        # Returns user_input formatted as SSN if passed
         return user_input
 
     # Obtains a specific data point and returns it if valid. "exit" allowed.
     def obtain_data_point(self, data_point, input_text):
         while data_point[0] == False: # Anything but False means already defined or unrequired
-            # Getting user input for each needed data point
-            # Different validations required depending on the expected data type: 1. string [can include regex validation] 2. datetime 3. integer 4. custom (matching against a list of acceptable inputs)
+            # Different validations required depending on the expected data type: 1. string [can include regex validation] 2. datetime 3. integer 4. custom (matching against a list/tuple of acceptable inputs)
 
-            # Getting input from user for string data points (including ones to validate against regex)
+            # User input evaluated against string data point (includes regex option for SSN)
             if data_point[2] == str or data_point[2] == "regex":
                 data_point[0] = input(input_text).strip()
-                if data_point[0] == "":
+                if data_point[0] == "": # Empty string permitted
                     data_point[0] = False
                     return
                 if data_point[0].lower() == "back":
-                    data_point[0] = None
+                    data_point[0] = False
                     return "back"
 
                 if data_point[2] == "regex": # Used for SSN
-                    data_point[0] = self.check_regex_input(data_point[0], data_point[3]) # Input and relevent regex code
+                    # Arguments are user input and relevent regex code
+                    data_point[0] = self.check_regex_input(data_point[0], data_point[3])
 
+            # User input evaluated against datetime data point
             elif data_point[2] == datetime.datetime:
                 user_input = input(input_text)
                 if user_input == "":
@@ -110,31 +104,34 @@ class CollectData:
                     allow_exit = True
                 )
                 if data_point[0] == "back":
-                    data_point[0] = None
+                    data_point[0] = False
                     return "back"
                 if data_point[0] == "exit": sys.exit()
-                if data_point[0] != False: data_point[0] = datetime.datetime.strftime(data_point[0], "%m/%d/%Y")
+                if data_point[0] != False: data_point[0] = datetime.datetime.strftime(data_point[0], "%#m/%d/%Y")
 
+            # User input evaluated against integer data point
             elif data_point[2] == int:
                 user_input = input(input_text).strip().lower()
                 if user_input == "exit": sys.exit()
                 if user_input == "back": return "back"
 
-                # Empty string input is assigned -1, which will be coded later to be ignored and treated as empty string
-                # I'm not using empty string because I want to be able to safely assume this is an int in later code
-                # I'm not using 0 because 0 evaluates to falsey and will continue the input loop
-                if user_input == "": user_input = -1
+                if user_input == "":
+                    data_point[0] = False
+                    return
                 else:
                     data_point[0] = self.data_validation.validate_user_input_num(
                         user_input,
                         float_num = False,
                         negative_num = False,
                         zero_num = False,
-                        min_num = 1
+                        min_num = 1,
+                        allow_exit = True
                     )
+                    if data_point[0] == "exit": sys.exit()
                 data_point[0] = int(user_input)
 
-            elif data_point[2] == "custom": # User input must match ele from a tuple/list
+            # User input evaluated against custom data point (list/tuple of acceptable inputs)
+            elif data_point[2] == "custom":
                 while data_point[0] == False: # False means currently unassigned but required
                     # Obtains user's input, validated against list/tuple
                     user_input = input(input_text)
@@ -148,7 +145,7 @@ class CollectData:
                         allow_exit = True
                     )
                     if data_point[0] == "back":
-                        data_point[0] = None
+                        data_point[0] = False
                         return "back"
                     if data_point[0] == False: input("\nPlease enter a valid input.\n\n(Press Enter.)\n")
                     if data_point[0] == "exit": sys.exit()
@@ -189,9 +186,11 @@ class CollectData:
             f"Please enter {self.all_data_points[valid_input - 1][1]}:\n"
         )
 
+    # User has selected a specific PDF to generate
     def select_one_pdf(self):
+        # Lists all PDF options
         for pdf_opt in self.all_pdf_options:
-            print(f"{pdf_opt}: {self.all_pdf_options[pdf_opt]}")
+            print(f"{pdf_opt}: {self.all_pdf_options[pdf_opt][0]}")
         user_input = False
         while user_input == False:
             user_input = self.data_validation.validate_user_input_custom(
@@ -202,25 +201,32 @@ class CollectData:
             )
             if user_input == "back": return
             if user_input == "exit": sys.exit()
-        if user_input == "1": _1503 = True
-        else: _1503 = False
-        if user_input == "2": packet = True
-        else: packet = False
-        if user_input == "3":
-            input("\nThe 4461 auto-fill is not working yet. Please make another selection.\n\n(Press Enter.)\n")
-            return
-        else: _4461 = False
-        if self.obtain_data(_1503 = _1503, _4461 = _4461, packet = packet) == "back": return
-        self.output_pdfs(_1503 = _1503, _4461 = _4461, packet = packet)
+
+        # Ensures only the user's input is passed in as a True argument
+        self.all_pdf_options["1"][1], self.all_pdf_options["2"][1], self.all_pdf_options["3"][1] = False, False, False
+        self.all_pdf_options[user_input][1] = True
+
+        # Obtains relevant data for only the PDF the user wants
+        if self.obtain_data(
+                _1503 = self.all_pdf_options["1"][1],
+                _4461 = self.all_pdf_options["2"][1],
+                packet = self.all_pdf_options["3"][1]
+        ) == "back": return
+        self.output_pdfs(
+            _1503 = self.all_pdf_options["1"][1],
+            _4461 = self.all_pdf_options["2"][1],
+            packet = self.all_pdf_options["3"][1]
+        )
 
     def test(self):
         self.output_pdfs(_1503 = True)
 
+    # 1503 and packet are required
     def reg_ma_documents(self):
-        if self.obtain_data(_1503 = True, _4461 = True, packet = True) == "back": return
-        self.output_pdfs(_1503 = True, _4461 = True, packet = True)
+        if self.obtain_data(_1503 = True, _4461 = False, packet = True) == "back": return
+        self.output_pdfs(_1503 = True, _4461 = False, packet = True)
 
-    # Displays all data the user has entered
+    # Displays all data the user has entered so far
     def display_entered_data(self):
         listed_count = 0
         for data_point in self.all_data_points:
@@ -231,9 +237,12 @@ class CollectData:
 
         input("\nPress Enter.\n")
 
+    # Allows user to select/change output directory
     def select_output_dir(self): self.OutputPDFs.select_dir()
 
+    # Outputs the desired PDF(s)
     def output_pdfs(self, _1503 = False, _4461 = False, packet = False):
+        # Requires arguments for all possible text fields. Using just self.all_data_points didn't work properly.
         self.OutputPDFs.import_export(
             fname = self.fname,
             lname = self.lname,
@@ -259,6 +268,7 @@ class CollectData:
             packet = packet
         )
 
+    # Confirms that the user wants to reset all data points (assigns None as 0-index)
     def user_reset_data_points(self):
         user_input = False
         while user_input == False:
@@ -296,6 +306,7 @@ class CollectData:
         self.state = [None, "home address state abbreviation (e.g., 'MN', 'WI')", "custom", self.state_options]
         self.zip = [None, "home address ZIP", int]
 
+        # All possible data points for all PDFs
         self.all_data_points = (
             self.fname,
             self.lname,
@@ -317,6 +328,8 @@ class CollectData:
             self.state,
             self.zip
         )
+        # Data points required for 1503s
+        # These are cycled through when the user is going to set up a 1503
         self._1503_req = (
             self.fname,
             self.lname,
@@ -332,6 +345,8 @@ class CollectData:
             self.hosp_name,
             self.hosp_adm_date,
         )
+        # Data points required for 4461s
+        # These are cycled through when the user is going to set up a 4461
         self._4461_req = (
             self.fname,
             self.lname,
@@ -341,6 +356,8 @@ class CollectData:
             self.hosp_name,
             self.ins_id
         )
+        # Data points required for packet of MA docs (3543, ROI, AVS)
+        # These are cycled through when the user is going to set up a packet of MA docs
         self.packet_req = (
             self.fname,
             self.lname,
