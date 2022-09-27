@@ -131,6 +131,7 @@ class OutputPDFs:
                     case "1_former_city": self.validate_field_value(city, writer, field)
                     case "1_former_state": self.validate_field_value([state[0]], writer, field)
                     case "1_former_zip": self.validate_field_value(zip, writer, field)
+                    case "name": self.validate_field_value([full_name], writer, field)
                     case "address": self.validate_field_value(str_address, writer, field)
                     case "city": self.validate_field_value(city, writer, field)
                     case "st": self.validate_field_value([state[0]], writer, field)
