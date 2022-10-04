@@ -8,7 +8,8 @@ CollectData = CollectData()
 
 main_menu = {
     "1": ("Regular MA documents (3543, ROI, AVS, 1503)", CollectData.reg_ma_documents),
-    "2": ("Choose a specific PDF to complete\n", CollectData.select_one_pdf),
+    "2": ("NOMNC and SNFABN", ),
+    "3": ("Choose a specific PDF to complete\n", CollectData.select_one_pdf),
     "S": ("Set specific data point", CollectData.change_data_point),
     "L": ("List current data points", CollectData.display_entered_data),
     "O": ("Define output directory", CollectData.select_output_dir),
