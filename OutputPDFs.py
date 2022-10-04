@@ -53,12 +53,13 @@ class OutputPDFs:
 
         # Building 1503
         if _1503 == True:
-            reader = PdfReader("doc_1503.pdf")
-            page01 = reader.pages[0] # Only 1 page long
-            all_fields = list(reader.get_fields().keys())
-
-            writer = PdfWriter()
-            writer.add_page(page01)
+            writer, all_fields = self.create_writer("doc_1503.pdf")
+            # reader = PdfReader("doc_1503.pdf")
+            # page01 = reader.pages[0] # Only 1 page long
+            # all_fields = list(reader.get_fields().keys())
+            #
+            # writer = PdfWriter()
+            # writer.add_page(page01)
 
             # Today's date is always the local machine's date, not from user input
             writer.update_page_form_field_values(
@@ -72,15 +73,10 @@ class OutputPDFs:
                     case "Date Physician Signed Order": self.validate_field_value(fac_adm_date, writer, field)
                     case "Date of this Admission": self.validate_field_value(fac_adm_date, writer, field)
                     case "Recipient name Last First Initial":
-                        # This is messy...clean up or at least turn into method
-                        if lname == None or\
-                                lname[0] == None or\
-                                lname[0] == False or\
-                                fname == None or\
-                                fname[0] == None or\
-                                fname[0] == False:
-                            continue
-                        full_name = f"{lname[0]}, {fname[0]}"
+                        # Gets full name for field. If first or last name is unavailable, skips iteration.
+                        full_name = self.combine_flnames(fname, lname, f_then_l = False)
+                        if full_name == False: continue
+
                         self.validate_field_value([full_name], writer, field)
                     case "Assistance Number": self.validate_field_value(pmi, writer, field)
                     case "Birthdate": self.validate_field_value(dob, writer, field)
@@ -103,26 +99,11 @@ class OutputPDFs:
 
         # Building packet (3543, ROI, AVS)
         if packet == True:
-            reader = PdfReader("doc_packet.pdf")
-            all_fields = list(reader.get_fields().keys())
-            all_pages = []
-            for page in reader.pages:
-                all_pages.append(page)
+            writer, all_fields = self.create_writer("doc_packet.pdf")
 
-            writer = PdfWriter()
-            for page in all_pages:
-                writer.add_page(page)
-
-            # This is messy...clean up or turn into method?
             # Setting up full_name, used in some fields and for filename (if None, filename is generated based on date/time)
-            if lname == None or \
-                    lname[0] == None or \
-                    lname[0] == False or \
-                    fname == None or \
-                    fname[0] == None or \
-                    fname[0] == False:
-                full_name = None
-            else: full_name = f"{lname[0]}, {fname[0]}"
+            full_name = self.combine_flnames(fname, lname, f_then_l = False)
+
             for field in all_fields:
                 match field:
                     case "name_first": self.validate_field_value(fname, writer, field)
@@ -149,39 +130,19 @@ class OutputPDFs:
 
         # Building NOMNC
         if nomnc == True:
-            reader = PdfReader("doc_NOMNC.pdf")
-            all_fields = list(reader.get_fields().keys())
-            all_pages = []
-            for page in reader.pages:
-                all_pages.append(page)
+            writer, all_fields = self.create_writer("doc_NOMNC.pdf")
 
-            writer = PdfWriter()
-            for page in all_pages:
-                writer.add_page(page)
-
-            # This is messy...clean up or turn into method?
             # Setting up full_name, used in some fields and for filename (if None, filename is generated based on date/time)
-            if lname == None or \
-                    lname[0] == None or \
-                    lname[0] == False or \
-                    fname == None or \
-                    fname[0] == None or \
-                    fname[0] == False:
-                full_name = None
-            else: full_name = f"{lname[0]}, {fname[0]}"
+            full_name = self.combine_flnames(fname, lname, f_then_l = False)
+
             for field in all_fields:
                 match field:
                     case "Text15": self.validate_field_value([self.fac_info], writer, field)
                     case "Text1":
-                        # This is messy...clean up or at least turn into method
-                        if lname == None or \
-                                lname[0] == None or \
-                                lname[0] == False or \
-                                fname == None or \
-                                fname[0] == None or \
-                                fname[0] == False:
-                            continue
-                        full_name = f"{fname[0]} {lname[0]}"
+                        # Gets full name for field. If first or last name is unavailable, skips iteration.
+                        full_name = self.combine_flnames(fname, lname)
+                        if full_name == False: continue
+
                         self.validate_field_value([full_name], writer, field)
                     case "Text2": self.validate_field_value(pcc_id, writer, field)
                     case "Text3": self.validate_field_value(lcd, writer, field)
@@ -191,39 +152,19 @@ class OutputPDFs:
 
         # Building SNFABN
         if snfabn == True:
-            reader = PdfReader("doc_SNFABN.pdf")
-            all_fields = list(reader.get_fields().keys())
-            all_pages = []
-            for page in reader.pages:
-                all_pages.append(page)
+            writer, all_fields = self.create_writer("doc_SNFABN.pdf")
 
-            writer = PdfWriter()
-            for page in all_pages:
-                writer.add_page(page)
-
-            # This is messy...clean up or turn into method?
             # Setting up full_name, used in some fields and for filename (if None, filename is generated based on date/time)
-            if lname == None or \
-                    lname[0] == None or \
-                    lname[0] == False or \
-                    fname == None or \
-                    fname[0] == None or \
-                    fname[0] == False:
-                full_name = None
-            else: full_name = f"{lname[0]}, {fname[0]}"
+            full_name = self.combine_flnames(fname, lname, f_then_l = False)
+
             for field in all_fields:
                 match field:
                     case "Facility name": self.validate_field_value([self.fac_info], writer, field)
                     case "Text2":
-                        # This is messy...clean up or at least turn into method
-                        if lname == None or \
-                                lname[0] == None or \
-                                lname[0] == False or \
-                                fname == None or \
-                                fname[0] == None or \
-                                fname[0] == False:
-                            continue
-                        full_name = f"{fname[0]} {lname[0]}"
+                        # Gets full name for field. If first or last name is unavailable, skips iteration.
+                        full_name = self.combine_flnames(fname, lname)
+                        if full_name == False: continue
+
                         self.validate_field_value([full_name], writer, field)
                     case "Text3": self.validate_field_value(pcc_id, writer, field)
                     case "Beginning on":
@@ -277,3 +218,30 @@ class OutputPDFs:
             if items_to_test in invalid_: filename = None
 
         return filename
+
+    # Attempts to combine first and last names together when they need to appear together.
+    # If either has not been provided by the user, returns False
+    # Defaults to first then last name (f_then_l = True)
+    def combine_flnames(self, fname, lname, f_then_l = True):
+        if lname == None or \
+                lname[0] == None or \
+                lname[0] == False or \
+                fname == None or \
+                fname[0] == None or \
+                fname[0] == False:
+            return False
+        if f_then_l == True: return f"{fname[0]} {lname[0]}"
+        return f"{lname[0]}, {fname[0]}"
+
+    def create_writer(self, file_name):
+        reader = PdfReader(file_name)
+        all_fields = list(reader.get_fields().keys())
+        all_pages = []
+        for page in reader.pages:
+            all_pages.append(page)
+
+        writer = PdfWriter()
+        for page in all_pages:
+            writer.add_page(page)
+
+        return writer, all_fields

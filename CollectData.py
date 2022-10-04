@@ -39,6 +39,8 @@ class CollectData:
         # (Data points that are None are unassigned and unrequired.)
         if _1503 is False and _4461 is False and packet is False and nomnc is False and snfabn is False: return # No selection made (shouldn't happen)
         else:
+            # Resets to ensure that the user is not asked for unneeded data points possibly left over from a previously created PDF
+            self.reset_data_points()
             if _1503 is True:
                 for data_point in self._1503_req:
                     if data_point[0] == None: data_point[0] = False
@@ -247,7 +249,7 @@ class CollectData:
         # Obtains relevant data for only the PDF the user wants
         if self.obtain_data(
             _1503 = self.all_pdf_options["1"][1],
-             packet = self.all_pdf_options["2"][1],
+            packet = self.all_pdf_options["2"][1],
             _4461 = self.all_pdf_options["3"][1],
             nomnc = self.all_pdf_options["4"][1],
             snfabn = self.all_pdf_options["5"][1]
