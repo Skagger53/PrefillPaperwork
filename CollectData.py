@@ -13,11 +13,13 @@ class CollectData:
         # Custom options used by self.data_validation for user input
         self.gender_options = ("M", "F")
         self.state_options = ("AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY")
-        self._1503, self._4461, self.packet = False, False, False
+        self._1503, self._4461, self.packet, self.nomnc, self.snfabn = False, False, False, False, False
         self.all_pdf_options = {
             "1": ["1503", self._1503],
             "2": ["MA packet", self.packet],
-            "3": ["4461", self._4461]
+            "3": ["4461", self._4461],
+            "4": ["NOMNC", self.nomnc],
+            "5": ["SNFABN", self.snfabn]
         }
         self.must_be_caps = (
             "gender (M/F)",
@@ -32,10 +34,10 @@ class CollectData:
         self.reset_data_points()
 
     # Gets relevant data from user based on which forms they want to complete
-    def obtain_data(self, _1503 = False, _4461 = False, packet = False):
+    def obtain_data(self, _1503 = False, _4461 = False, packet = False, nomnc = False, snfabn = False):
         # For a form the user wants to complete, this sets relevant data points to False, indicating they are unassigned but required
         # (Data points that are None are unassigned and unrequired.)
-        if _1503 is False and _4461 is False and packet is False: return # No selection made (shouldn't happen)
+        if _1503 is False and _4461 is False and packet is False and nomnc is False and snfabn is False: return # No selection made (shouldn't happen)
         else:
             if _1503 is True:
                 for data_point in self._1503_req:
@@ -45,6 +47,12 @@ class CollectData:
                     if data_point[0] == None: data_point[0] = False
             if packet is True:
                 for data_point in self.packet_req:
+                    if data_point[0] == None: data_point[0] = False
+            if nomnc is True:
+                for data_point in self.nomnc_req:
+                    if data_point[0] == None: data_point[0] = False
+            if snfabn is True:
+                for data_point in self.snfabn_req:
                     if data_point[0] == None: data_point[0] = False
 
         # Gets user input for all required data points
@@ -117,10 +125,10 @@ class CollectData:
                     data_point[0] = False
                     return "back"
                 if data_point[0] == "exit": sys.exit()
-                if data_point[0] != False: data_point[0] = datetime.datetime.strftime(data_point[0], "%#m/%d/%Y")
+                if data_point[0] != False: data_point[0] = datetime.datetime.strftime(data_point[0], "%#m/%#d/%Y")
 
-            # User input evaluated against integer data point
-            elif data_point[2] == int:
+            # User input evaluated against integer or floatdata point
+            elif data_point[2] == int or data_point[2] == float:
                 user_input = input(f"\n{input_text}").strip().lower()
                 if user_input == "exit": sys.exit()
                 if user_input == "back": return "back"
@@ -128,7 +136,7 @@ class CollectData:
                 if user_input == "":
                     data_point[0] = False
                     return
-                else:
+                if data_point[2] == int:
                     data_point[0] = self.data_validation.validate_user_input_num(
                         user_input,
                         float_num = False,
@@ -137,8 +145,18 @@ class CollectData:
                         min_num = 1,
                         allow_exit = True
                     )
-                    if data_point[0] == "exit": sys.exit()
-                data_point[0] = int(user_input)
+                    data_point[0] = int(user_input)
+                    return
+
+                data_point[0] = self.data_validation.validate_user_input_num(
+                    user_input,
+                    float_num = True,
+                    negative_num = False,
+                    zero_num = False,
+                    min_num = 1,
+                    allow_exit = True
+                )
+                data_point[0] = float(user_input)
 
             # User input evaluated against custom data point (list/tuple of acceptable inputs)
             elif data_point[2] == "custom":
@@ -218,19 +236,28 @@ class CollectData:
             if user_input == "exit": sys.exit()
 
         # Ensures only the user's input is passed in as a True argument
-        self.all_pdf_options["1"][1], self.all_pdf_options["2"][1], self.all_pdf_options["3"][1] = False, False, False
+        self.all_pdf_options["1"][1],\
+        self.all_pdf_options["2"][1],\
+        self.all_pdf_options["3"][1],\
+        self.all_pdf_options["4"][1],\
+        self.all_pdf_options["5"][1] =\
+            False, False, False, False, False
         self.all_pdf_options[user_input][1] = True
 
         # Obtains relevant data for only the PDF the user wants
         if self.obtain_data(
-                _1503 = self.all_pdf_options["1"][1],
-                 packet = self.all_pdf_options["2"][1],
-                _4461 = self.all_pdf_options["3"][1]
+            _1503 = self.all_pdf_options["1"][1],
+             packet = self.all_pdf_options["2"][1],
+            _4461 = self.all_pdf_options["3"][1],
+            nomnc = self.all_pdf_options["4"][1],
+            snfabn = self.all_pdf_options["5"][1]
         ) == "back": return
         self.output_pdfs(
             _1503 = self.all_pdf_options["1"][1],
             packet = self.all_pdf_options["2"][1],
-            _4461 = self.all_pdf_options["3"][1]
+            _4461 = self.all_pdf_options["3"][1],
+            nomnc = self.all_pdf_options["4"][1],
+            snfabn = self.all_pdf_options["5"][1]
         )
 
     def test(self):
@@ -241,6 +268,11 @@ class CollectData:
         if self.obtain_data(_1503 = True, _4461 = False, packet = True) == "back": return
         self.output_pdfs(_1503 = True, _4461 = False, packet = True)
 
+    # NOMNC and SNFABN are required
+    def nomnc_and_snfabn(self):
+        if self.obtain_data(nomnc = True, snfabn = True) == "back": return
+        self.output_pdfs(nomnc = True, snfabn = True)
+
     # Displays all data the user has entered so far
     def display_entered_data(self):
         listed_count = 0
@@ -248,7 +280,7 @@ class CollectData:
             if data_point[0] != None and data_point[0] is not False:
                 print(f"{data_point[1][0].upper() + data_point[1][1:]}: {data_point[0]}")
                 listed_count += 1
-        if listed_count == 0: print("(\nNo data points entered.)")
+        if listed_count == 0: print("\n(No data points entered.)")
 
         input("\nPress Enter.\n")
 
@@ -256,7 +288,7 @@ class CollectData:
     def select_output_dir(self): self.OutputPDFs.select_dir()
 
     # Outputs the desired PDF(s)
-    def output_pdfs(self, _1503 = False, _4461 = False, packet = False):
+    def output_pdfs(self, _1503 = False, _4461 = False, packet = False, nomnc = False, snfabn = False):
         # Requires arguments for all possible text fields. Using just self.all_data_points didn't work properly.
         self.OutputPDFs.import_export(
             fname = self.fname,
@@ -278,9 +310,14 @@ class CollectData:
             city = self.city,
             state = self.state,
             zip = self.zip,
+            pcc_id = self.pcc_id,
+            lcd = self.lcd,
+            daily_cost = self.daily_cost,
             _1503 = _1503,
             _4461 = _4461,
-            packet = packet
+            packet = packet,
+            nomnc = nomnc,
+            snfabn = snfabn
         )
 
     # Confirms that the user wants to reset all data points (assigns None as 0-index)
@@ -320,6 +357,9 @@ class CollectData:
         self.city = [None, "home address city", str]
         self.state = [None, "home address state abbreviation (e.g., 'MN', 'WI')", "custom", self.state_options]
         self.zip = [None, "home address ZIP", int]
+        self.pcc_id = [None, "record number (PCC ID)", int]
+        self.lcd = [None, "LCD", datetime.datetime]
+        self.daily_cost = [None, "estimated daily rate (do not include the dollar sign)", float]
 
         # All possible data points for all PDFs
         self.all_data_points = (
@@ -341,7 +381,10 @@ class CollectData:
             self.str_address,
             self.city,
             self.state,
-            self.zip
+            self.zip,
+            self.pcc_id,
+            self.lcd,
+            self.daily_cost
         )
         # Data points required for 1503s
         # These are cycled through when the user is going to set up a 1503
@@ -383,4 +426,21 @@ class CollectData:
             self.city,
             self.state,
             self.zip
+        )
+        # Data points required for NOMNC
+        # These are cycled through when the user is going to set up a NOMNC
+        self.nomnc_req = (
+            self.fname,
+            self.lname,
+            self.pcc_id,
+            self.lcd
+        )
+        # Data points required for SNFABN
+        # These are cycled through when the user is going to set up a SNFABN
+        self.snfabn_req = (
+            self.fname,
+            self.lname,
+            self.pcc_id,
+            self.lcd,
+            self.daily_cost
         )

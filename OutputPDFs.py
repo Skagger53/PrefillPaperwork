@@ -2,6 +2,7 @@ import tkinter
 from tkinter import filedialog, messagebox
 from PyPDF2 import PdfReader, PdfWriter
 import datetime
+from datetime import timedelta
 
 class OutputPDFs:
     def __init__(self):
@@ -10,12 +11,7 @@ class OutputPDFs:
         # If undeclared, I can't check this without involving unnecessary exception handling
         self.output_dir = ""
         # Omits date field, since this will ALWAYS be filled in with today's date
-        # self._1503_fields = (
-        #     "Date Physician Signed Order",
-        #     "Date of this Admission",
-        #     "Recipient name Last First Initial",
-        #     "Assistance Number"
-        # )
+        self.fac_info = "The Estates at Chateau, 2106 2nd Ave S, Mpls, MN 55404 (phone 612-874-1603)"
 
     # User selects output directory
     def select_dir(self): self.output_dir = tkinter.filedialog.askdirectory()
@@ -41,10 +37,15 @@ class OutputPDFs:
                     city = None,
                     state = None,
                     zip = None,
+                    pcc_id = None,
+                    lcd = None,
+                    daily_cost = None,
                     _1503 = False,
                     _4461 = False,
-                    packet = False
-                    ):
+                    packet = False,
+                    nomnc = False,
+                    snfabn = False
+        ):
         if self.output_dir == "": # If no output directory selected yet
             tkinter.messagebox.showinfo(title = "Select directory", message = "Please select an output directory")
             self.select_dir()
@@ -145,6 +146,94 @@ class OutputPDFs:
 
             # Creates PDF based on writer object
             self.write_out(self.attempt_filename_flnames(fname, lname), "MA_Packet", writer)
+
+        # Building NOMNC
+        if nomnc == True:
+            reader = PdfReader("doc_NOMNC.pdf")
+            all_fields = list(reader.get_fields().keys())
+            all_pages = []
+            for page in reader.pages:
+                all_pages.append(page)
+
+            writer = PdfWriter()
+            for page in all_pages:
+                writer.add_page(page)
+
+            # This is messy...clean up or turn into method?
+            # Setting up full_name, used in some fields and for filename (if None, filename is generated based on date/time)
+            if lname == None or \
+                    lname[0] == None or \
+                    lname[0] == False or \
+                    fname == None or \
+                    fname[0] == None or \
+                    fname[0] == False:
+                full_name = None
+            else: full_name = f"{lname[0]}, {fname[0]}"
+            for field in all_fields:
+                match field:
+                    case "Text15": self.validate_field_value([self.fac_info], writer, field)
+                    case "Text1":
+                        # This is messy...clean up or at least turn into method
+                        if lname == None or \
+                                lname[0] == None or \
+                                lname[0] == False or \
+                                fname == None or \
+                                fname[0] == None or \
+                                fname[0] == False:
+                            continue
+                        full_name = f"{fname[0]} {lname[0]}"
+                        self.validate_field_value([full_name], writer, field)
+                    case "Text2": self.validate_field_value(pcc_id, writer, field)
+                    case "Text3": self.validate_field_value(lcd, writer, field)
+
+            # Creates PDF based on writer object
+            self.write_out(self.attempt_filename_flnames(fname, lname), "NOMNC", writer)
+
+        # Building SNFABN
+        if snfabn == True:
+            reader = PdfReader("doc_SNFABN.pdf")
+            all_fields = list(reader.get_fields().keys())
+            all_pages = []
+            for page in reader.pages:
+                all_pages.append(page)
+
+            writer = PdfWriter()
+            for page in all_pages:
+                writer.add_page(page)
+
+            # This is messy...clean up or turn into method?
+            # Setting up full_name, used in some fields and for filename (if None, filename is generated based on date/time)
+            if lname == None or \
+                    lname[0] == None or \
+                    lname[0] == False or \
+                    fname == None or \
+                    fname[0] == None or \
+                    fname[0] == False:
+                full_name = None
+            else: full_name = f"{lname[0]}, {fname[0]}"
+            for field in all_fields:
+                match field:
+                    case "Facility name": self.validate_field_value([self.fac_info], writer, field)
+                    case "Text2":
+                        # This is messy...clean up or at least turn into method
+                        if lname == None or \
+                                lname[0] == None or \
+                                lname[0] == False or \
+                                fname == None or \
+                                fname[0] == None or \
+                                fname[0] == False:
+                            continue
+                        full_name = f"{fname[0]} {lname[0]}"
+                        self.validate_field_value([full_name], writer, field)
+                    case "Text3": self.validate_field_value(pcc_id, writer, field)
+                    case "Beginning on":
+                        eff_date = datetime.datetime.strptime(lcd[0], "%m/%d/%Y") + timedelta(days = 1)
+                        self.validate_field_value([datetime.datetime.strftime(eff_date, "%#m/%#d/%Y")], writer, field)
+                    case "Estimated CostYou no longer require daily skilled care by a professional nurse or therapist":
+                        self.validate_field_value([f"${'{:.2f}'.format(daily_cost[0])}"], writer, field)
+
+            # Creates PDF based on writer object
+            self.write_out(self.attempt_filename_flnames(fname, lname), "SNFABN", writer)
 
     # Enters the user's input (if any) into the relevant PDF field
     def validate_field_value(self, value, writer, field):
