@@ -39,8 +39,14 @@ class CollectData:
         # (Data points that are None are unassigned and unrequired.)
         if _1503 is False and _4461 is False and packet is False and nomnc is False and snfabn is False: return # No selection made (shouldn't happen)
         else:
-            # Resets to ensure that the user is not asked for unneeded data points possibly left over from a previously created PDF
-            self.reset_data_points()
+            # Data points marked as False are those that are unspecified but required; data points marked
+            # as None are unspecified and unrequired. Since the user is setting up one or more PDFs here,
+            # all False are returned to None initially, and then the relevant PDF(s) they're creating
+            # has its data points set to False; all others are left alone (whether they were None
+            # already or were already assigned).
+            for data_point in self.all_data_points:
+                if data_point[0] == False: data_point[0] = None
+
             if _1503 is True:
                 for data_point in self._1503_req:
                     if data_point[0] == None: data_point[0] = False
