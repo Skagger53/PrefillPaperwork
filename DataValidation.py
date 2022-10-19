@@ -126,20 +126,34 @@ class DataValidation:
             (" " + str(datetime.datetime.now().year), "%b %d %Y")
         )
 
-        # input_test is testing when the user enters a date including the year
-        input_test = ("%m/%d/%Y", "%m/%d/%y", "%b %d %Y", "%b %d %y", "%B %d %Y", "%B %d %y")
-
         # Checks for instances when the user did not provide a year
         for check in no_year_input_test:
             try: time_obj = datetime.datetime.strptime(user_input + check[0], check[1])
             except: pass
             else: return time_obj
 
+        # input_test is testing when the user enters a date including the year
+        # [0] is what strptime will use. [1] is True if validation was successful with "%y", meaning user provided only two digits for the year, not 4; in this case, any %y in the next 10 years will be assumed to be part of this century and anything else last (e.g., if now().year == 2022, then 1/1/32 is 1/1/2032 but 1/1/33 is 1/1/1933).
+        input_test = (
+            ("%m/%d/%Y", False),
+            ("%m/%d/%y", True),
+            ("%b %d %Y", False),
+            ("%b %d %y", True),
+            ("%B %d %Y", False),
+            ("%B %d %y", True)
+        )
+
         # Checks for instances when the user provided the full date
         for check in input_test:
-            try: time_obj = datetime.datetime.strptime(user_input, check)
+            try: time_obj = datetime.datetime.strptime(user_input, check[0])
             except: pass
-            else: return time_obj
+            else:
+                # If validation succeeded with "%y", then checks to see if current or last century should be used.
+                if check[1] and \
+                        time_obj.year - datetime.datetime.now().year > 10:
+                    time_obj = datetime.datetime(time_obj.year - 100, time_obj.month, time_obj.day)
+
+                return time_obj
 
         return False
 
