@@ -346,6 +346,7 @@ class CollectData:
     # Executes at class initialization, but can also be used to reset values for starting a new set of paperwork (to reset the 0-index).
     # Format: data point, string description, data type, unique data needed (either a tuple/list of acceptable inputs for self.data_validation.validate_user_input_custom OR a regex str code for self.data_faliction.validate_user_input_regex)
     def reset_data_points(self):
+        self.OutputPDFs.output_dir = ""
         self.fname = [None, "first name", str]
         self.lname = [None, "last name", str]
         self.dob = [None, "date of birth", datetime.datetime]
