@@ -153,6 +153,7 @@ class CollectData:
                         min_num = 1,
                         allow_exit = True
                     )
+                    if data_point[0] == False: return
                     data_point[0] = int(user_input)
                     return
 
