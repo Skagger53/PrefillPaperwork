@@ -234,7 +234,7 @@ class OutputPDFs:
         return f"{lname[0]}, {fname[0]}"
 
     def create_writer(self, file_name):
-        reader = PdfReader(file_name)
+        reader = PdfReader(file_name, strict = False)
         all_fields = list(reader.get_fields().keys())
         all_pages = []
         for page in reader.pages:

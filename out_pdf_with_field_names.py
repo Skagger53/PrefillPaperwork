@@ -19,7 +19,7 @@ def validate_field_value(writer, field):
                 writer.pages[page], {field: field}
             )
 
-reader = PdfReader(pdf_file)
+reader = PdfReader(pdf_file, strict = False)
 all_fields = list(reader.get_fields().keys())
 
 all_pages = []
