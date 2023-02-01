@@ -1,5 +1,7 @@
 import sys
 
+from PyPDF2.generic import BooleanObject, NameObject, IndirectObject
+
 from PyPDF2 import PdfReader, PdfWriter
 import tkinter
 from tkinter import filedialog
@@ -31,7 +33,8 @@ for page in all_pages: writer.add_page(page)
 for field in all_fields: validate_field_value(writer, field)
 
 output_dir = tkinter.filedialog.askdirectory()
-if output_dir != "": output_dir += "/"
+if output_dir == "": sys.exit()
+output_dir += "/"
 
 with open(f"{output_dir}field_key_{file_name}", "wb") as output_stream:
-    writer.write(output_stream)
+    writer.write_stream(output_stream)
