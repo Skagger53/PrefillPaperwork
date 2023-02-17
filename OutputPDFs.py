@@ -137,15 +137,15 @@ class OutputPDFs:
 
             for field in all_fields:
                 match field:
-                    case "Text15": self.validate_field_value([self.fac_info], writer, field)
-                    case "Text1":
+                    #case "Text15": self.validate_field_value([self.fac_info], writer, field)
+                    case "pat_name":
                         # Gets full name for field. If first or last name is unavailable, skips iteration.
                         full_name = self.combine_flnames(fname, lname)
                         if full_name == False: continue
 
                         self.validate_field_value([full_name], writer, field)
-                    case "Text2": self.validate_field_value(pcc_id, writer, field)
-                    case "Text3": self.validate_field_value(lcd, writer, field)
+                    case "pat_id": self.validate_field_value(pcc_id, writer, field)
+                    case "lcd": self.validate_field_value(lcd, writer, field)
 
             # Creates PDF based on writer object
             self.write_out(self.attempt_filename_flnames(fname, lname), "NOMNC", writer)
@@ -159,18 +159,18 @@ class OutputPDFs:
 
             for field in all_fields:
                 match field:
-                    case "Facility name": self.validate_field_value([self.fac_info], writer, field)
-                    case "Text2":
+                    #case "Facility name": self.validate_field_value([self.fac_info], writer, field)
+                    case "ben_name":
                         # Gets full name for field. If first or last name is unavailable, skips iteration.
                         full_name = self.combine_flnames(fname, lname)
                         if full_name == False: continue
 
                         self.validate_field_value([full_name], writer, field)
-                    case "Text3": self.validate_field_value(pcc_id, writer, field)
-                    case "Beginning on":
+                    case "ben_id": self.validate_field_value(pcc_id, writer, field)
+                    case "ben_lcd_plus1":
                         eff_date = datetime.datetime.strptime(lcd[0], "%m/%d/%Y") + timedelta(days = 1)
                         self.validate_field_value([datetime.datetime.strftime(eff_date, "%#m/%#d/%Y")], writer, field)
-                    case "Estimated CostYou no longer require daily skilled care by a professional nurse or therapist":
+                    case "ben_est_cost":
                         self.validate_field_value([f"${'{:.2f}'.format(daily_cost[0])}"], writer, field)
 
             # Creates PDF based on writer object
