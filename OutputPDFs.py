@@ -1,8 +1,9 @@
+import os
 import tkinter
 from tkinter import filedialog, messagebox
-from PyPDF2 import PdfReader, PdfWriter
 import datetime
 from datetime import timedelta
+import fitz
 
 class OutputPDFs:
     def __init__(self):
@@ -53,157 +54,158 @@ class OutputPDFs:
 
         # Building 1503
         if _1503 == True:
-            writer, all_fields = self.create_writer("doc_1503.pdf")
-            # reader = PdfReader("doc_1503.pdf")
-            # page01 = reader.pages[0] # Only 1 page long
-            # all_fields = list(reader.get_fields().keys())
-            #
-            # writer = PdfWriter()
-            # writer.add_page(page01)
-
-            # Today's date is always the local machine's date, not from user input
-            writer.update_page_form_field_values(
-                writer.pages[0], {"Todays date": datetime.datetime.strftime(datetime.datetime.now(),"%#m/%d/%Y")}
-            )
+            pdf_file = self.get_file_path("doc_1503.pdf")
+            pdf_doc = fitz.open(pdf_file)
 
             full_name = None # Used for file name. If None, generates file name based on date and time.
             # Cycles through all relevant fields in the 1503 and enters whatever the user has provided
-            for field in all_fields:
-                match field:
-                    case "Date Physician Signed Order": self.validate_field_value(fac_adm_date, writer, field)
-                    case "Date of this Admission": self.validate_field_value(fac_adm_date, writer, field)
+            for widget in pdf_doc.load_page(0).widgets():
+                match widget.field_name:
+                    # Today's date is always the local machine's date, not from user input
+                    case "Todays date":
+                        self.fill_field(widget, datetime.datetime.strftime(datetime.datetime.now(),"%#m/%d/%Y"))
+                    case "Date Physician Signed Order": self.fill_field(widget, fac_adm_date[0])
+                    case "Date of this Admission": self.fill_field(widget, fac_adm_date[0])
                     case "Recipient name Last First Initial":
                         # Gets full name for field. If first or last name is unavailable, skips iteration.
                         full_name = self.combine_flnames(fname, lname, f_then_l = False)
                         if full_name == False: continue
 
-                        self.validate_field_value([full_name], writer, field)
-                    case "Assistance Number": self.validate_field_value(pmi, writer, field)
-                    case "Birthdate": self.validate_field_value(dob, writer, field)
-                    case "Gender": self.validate_field_value([gender[0]], writer, field)
-                    case "Primary DiagnosisReason for Admission": self.validate_field_value(prim_dx, writer, field)
-                    case "DIAG Code": self.validate_field_value([prim_dx_code[0]], writer, field)
-                    case "Secondary Diagnosis": self.validate_field_value(sec_dx, writer, field)
-                    case "DIAG Code_2": self.validate_field_value([sec_dx_code[0]], writer, field)
-                    case "a If yes date screened": self.validate_field_value(fac_adm_date, writer, field)
-                    case "and name of agency that did screening": self.validate_field_value([pas[0]], writer, field)
-                    case "Date of first admission": self.validate_field_value(fac_adm_date, writer, field)
-                    case "33a If Box 33 is checked indicate Name of hospital":
-                        self.validate_field_value(hosp_name, writer, field)
-                    case "Date of hospital admission": self.validate_field_value(hosp_adm_date, writer, field)
-                    case "Date of hospital discharge": self.validate_field_value(fac_adm_date, writer, field)
+                        self.fill_field(widget, full_name)
+                    case "Assistance Number":
+                        self.fill_field(widget, str(pmi[0]))
+                    case "Birthdate": self.fill_field(widget, dob[0])
+                    case "Gender": self.fill_field(widget, gender[0])
+                    case "Primary DiagnosisReason for Admission": self.fill_field(widget, prim_dx[0])
+                    case "DIAG Code": self.fill_field(widget, prim_dx_code[0])
+                    case "Secondary Diagnosis": self.fill_field(widget, sec_dx[0])
+                    case "DIAG Code_2": self.fill_field(widget, sec_dx_code[0])
+                    case "a If yes date screened": self.fill_field(widget, fac_adm_date[0])
+                    case "and name of agency that did screening": self.fill_field(widget, pas[0])
+                    case "Date of first admission": self.fill_field(widget, fac_adm_date[0])
+                    case "33a If Box 33 is checked indicate Name of hospital": self.fill_field(widget, fac_adm_date[0])
+                    case "Date of hospital admission": self.fill_field(widget, hosp_adm_date[0])
+                    case "Date of hospital discharge": self.fill_field(widget, fac_adm_date[0])
                     case other: pass
 
-            # Creates the PDF from the writer object
-            self.write_out(self.attempt_filename_flnames(fname, lname), "1503", writer)
+            # Creates the PDF
+            self.write_out(self.attempt_filename_flnames(fname, lname), "1503", pdf_doc)
 
         # Building packet (3543, ROI, AVS)
         if packet == True:
-            writer, all_fields = self.create_writer("doc_packet.pdf")
+            pdf_file = self.get_file_path("doc_packet.pdf")
+            pdf_doc = fitz.open(pdf_file)
 
             # Setting up full_name, used in some fields and for filename (if None, filename is generated based on date/time)
             full_name = self.combine_flnames(fname, lname, f_then_l = False)
 
-            for field in all_fields:
-                match field:
-                    case "name_first": self.validate_field_value(fname, writer, field)
-                    case "name_last": self.validate_field_value(lname, writer, field)
-                    case "pmi": self.validate_field_value(pmi, writer, field)
-                    case "1_former_address": self.validate_field_value(str_address, writer, field)
-                    case "1_former_city": self.validate_field_value(city, writer, field)
-                    case "1_former_state": self.validate_field_value([state[0]], writer, field)
-                    case "1_former_zip": self.validate_field_value(zip, writer, field)
-                    case "name": self.validate_field_value([full_name], writer, field)
-                    case "address": self.validate_field_value(str_address, writer, field)
-                    case "city": self.validate_field_value(city, writer, field)
-                    case "st": self.validate_field_value([state[0]], writer, field)
-                    case "zip": self.validate_field_value(zip, writer, field)
-                    case "birthdate": self.validate_field_value(dob, writer, field)
-                    case "social security number": self.validate_field_value(ssn, writer, field)
-                    case "NameFirst[0]": self.validate_field_value([full_name], writer, field)
-                    case "SSN[0]": self.validate_field_value(ssn, writer, field)
-                    case "BirthDate[0]": self.validate_field_value(dob, writer, field)
-                    case other: pass
+            for page in pdf_doc:
+                for widget in page.widgets():
+                    match widget.field_name:
+                        case "name_first": self.fill_field(widget, fname[0])
+                        case "name_last": self.fill_field(widget, lname[0])
+                        case "pmi": self.fill_field(widget, str(pmi[0]))
+                        case "1_former_address": self.fill_field(widget, str_address[0])
+                        case "1_former_city": self.fill_field(widget, city[0])
+                        case "1_former_state": self.fill_field(widget, state[0])
+                        case "1_former_zip": self.fill_field(widget, str(zip[0]))
 
-            # Creates PDF based on writer object
-            self.write_out(self.attempt_filename_flnames(fname, lname), "MA_Packet", writer)
+                        # case "name": self.fill_field(widget, full_name[0])
+                        # case "address": self.fill_field(widget, str_address[0])
+                        # case "city": self.fill_field(widget, city[0])
+                        # case "st": self.fill_field(widget, state[0])
+                        # case "zip": self.fill_field(widget, str(zip[0]))
+                        # case "birthdate": self.fill_field(widget, dob[0])
+
+                        case "consent.name": self.fill_field(widget, fname[0] + " " + lname[0])
+                        case "consent.birthdate": self.fill_field(widget, dob[0])
+                        case "consent.social security number": self.fill_field(widget, ssn[0])
+                        case "social security number": self.fill_field(widget, ssn[0])
+
+                        case "form1[0].P1[0].sfApplicant[0].sfBorder[0].NameFirst[0]":
+                            self.fill_field(widget, fname[0] + " " + lname[0])
+                        case "form1[0].P1[0].sfApplicant[0].sfBorder[0].SSN[0]": self.fill_field(widget, ssn[0])
+                        case "form1[0].P1[0].sfApplicant[0].sfBorder[0].BirthDate[0]": self.fill_field(widget, dob[0])
+                        case other: pass
+
+            # Creates PDF
+            self.write_out(self.attempt_filename_flnames(fname, lname), "MA_Packet", pdf_doc)
 
         # Building NOMNC
         if nomnc == True:
-            writer, all_fields = self.create_writer("doc_NOMNC.pdf")
+            pdf_file = self.get_file_path("doc_NOMNC.pdf")
+            pdf_doc = fitz.open(pdf_file)
 
             # Setting up full_name, used in some fields and for filename (if None, filename is generated based on date/time)
             full_name = self.combine_flnames(fname, lname, f_then_l = False)
 
-            for field in all_fields:
-                match field:
-                    #case "Text15": self.validate_field_value([self.fac_info], writer, field)
-                    case "pat_name":
-                        # Gets full name for field. If first or last name is unavailable, skips iteration.
-                        full_name = self.combine_flnames(fname, lname)
-                        if full_name == False: continue
+            for page in pdf_doc:
+                for widget in page.widgets():
+                    match widget.field_name:
+                        #case "Text15": self.validate_field_value([self.fac_info], writer, field)
+                        case "pat_name":
+                            # Gets full name for field. If first or last name is unavailable, skips iteration.
+                            full_name = self.combine_flnames(fname, lname)
+                            if full_name == False: continue
 
-                        self.validate_field_value([full_name], writer, field)
-                    case "pat_id": self.validate_field_value(pcc_id, writer, field)
-                    case "lcd": self.validate_field_value(lcd, writer, field)
+                            widget = self.fill_field(widget, full_name)
+                        case "pat_id":
+                            widget = self.fill_field(widget, str(pcc_id[0]))
+                        case "lcd":
+                            widget = self.fill_field(widget, lcd[0])
 
-            # Creates PDF based on writer object
-            self.write_out(self.attempt_filename_flnames(fname, lname), "NOMNC", writer)
+            # Creates PDF
+            self.write_out(self.attempt_filename_flnames(fname, lname), "NOMNC", pdf_doc)
 
         # Building SNFABN
         if snfabn == True:
-            writer, all_fields = self.create_writer("doc_SNFABN.pdf")
+            pdf_file = self.get_file_path("doc_SNFABN.pdf")
+            pdf_doc = fitz.open(pdf_file)
 
             # Setting up full_name, used in some fields and for filename (if None, filename is generated based on date/time)
             full_name = self.combine_flnames(fname, lname, f_then_l = False)
 
-            for field in all_fields:
-                match field:
-                    #case "Facility name": self.validate_field_value([self.fac_info], writer, field)
-                    case "ben_name":
-                        # Gets full name for field. If first or last name is unavailable, skips iteration.
-                        full_name = self.combine_flnames(fname, lname)
-                        if full_name == False: continue
+            for page in pdf_doc:
+                for widget in page.widgets():
+                    match widget.field_name:
+                        #case "Facility name": self.validate_field_value([self.fac_info], writer, field)
+                        case "ben_name":
+                            # Gets full name for field. If first or last name is unavailable, skips iteration.
+                            full_name = self.combine_flnames(fname, lname)
+                            if full_name == False: continue
 
-                        self.validate_field_value([full_name], writer, field)
-                    case "ben_id": self.validate_field_value(pcc_id, writer, field)
-                    case "ben_lcd_plus1":
-                        eff_date = datetime.datetime.strptime(lcd[0], "%m/%d/%Y") + timedelta(days = 1)
-                        self.validate_field_value([datetime.datetime.strftime(eff_date, "%#m/%#d/%Y")], writer, field)
-                    case "ben_est_cost":
-                        self.validate_field_value([f"${'{:.2f}'.format(daily_cost[0])}"], writer, field)
+                            self.fill_field(widget, full_name)
+                        case "ben_id": self.fill_field(widget, str(pcc_id[0]))
+                        case "ben_lcd_plus1":
+                            eff_date = datetime.datetime.strptime(lcd[0], "%m/%d/%Y") + timedelta(days = 1)
+                            self.fill_field(widget, datetime.datetime.strftime(eff_date, "%#m/%#d/%Y"))
+                        case "ben_est_cost":
+                            self.fill_field(widget, f"${'{:.2f}'.format(daily_cost[0])}")
 
-            # Creates PDF based on writer object
-            self.write_out(self.attempt_filename_flnames(fname, lname), "SNFABN", writer)
+            # Creates PDF
+            self.write_out(self.attempt_filename_flnames(fname, lname), "SNFABN", pdf_doc)
 
-    # Enters the user's input (if any) into the relevant PDF field
-    def validate_field_value(self, value, writer, field):
-        if value[0] == None or value[0] == False: return # No user input
-        if len(writer.pages) == 1: # Loop below doesn't work for one-page PDFs
-            writer.update_page_form_field_values(
-                writer.pages[0], {field: value[0]}
-            )
-        else: # Loops through all pages if PDF > 1 page
-            for page in range(len(writer.pages) - 1):
-                writer.update_page_form_field_values(
-                    writer.pages[page], {field: value[0]}
-                )
+    # Fills the relevant widget's field with the correct text from the user
+    def fill_field(self, widget, value):
+        if widget.field_value == None: widget.field_value = ""
+        else: widget.field_value = value
+
+        widget.update()
+
+        return widget
 
     # Creates PDF
-    def write_out(self, filename, pdf_name, writer):
+    def write_out(self, filename, pdf_name, pdf_file):
         if filename == None: # No filename generated based on name of patient
             filename = datetime.datetime.strftime(datetime.datetime.now(), "%Y.%m.%d_%H%M%S")
 
         # Attempts to output PDF
         # Primarily to catch issues of filename having disallowed characters for Windows files
-        try:
-            with open(f"{self.output_dir}/{filename}_{pdf_name}.pdf", "wb") as output_stream:
-                writer.write(output_stream)
+        try: pdf_file.save(f"{self.output_dir}/{filename}_{pdf_name}.pdf")
         except: # Problem creating file
             try: # Attempts to create file using generated file name from date/time
                 filename = datetime.datetime.strftime(datetime.datetime.now(), "%Y.%m.%d_%H%M%S")
-                with open(f"{self.output_dir}/{filename}.pdf", "wb") as output_stream:
-                    writer.write(output_stream)
+                pdf_file.save(f"{self.output_dir}/{filename}_{pdf_name}.pdf")
             except Exception as write_error: # Failed to create file even with generated filename
                 input(f"Error writing PDF. Write failed.\n\n{write_error}\n\n(Press Enter.)\n")
 
@@ -233,15 +235,11 @@ class OutputPDFs:
         if f_then_l == True: return f"{fname[0]} {lname[0]}"
         return f"{lname[0]}, {fname[0]}"
 
-    def create_writer(self, file_name):
-        reader = PdfReader(file_name, strict = False)
-        all_fields = list(reader.get_fields().keys())
-        all_pages = []
-        for page in reader.pages:
-            all_pages.append(page)
+    # Gets absolute path of file. Needed due to calling this code with batches.
+    def get_file_path(self, filename):
+        file_path = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            filename
+        )
 
-        writer = PdfWriter()
-        for page in all_pages:
-            writer.add_page(page)
-
-        return writer, all_fields
+        return file_path
