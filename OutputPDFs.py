@@ -73,7 +73,7 @@ class OutputPDFs:
 
                         self.fill_field(widget, full_name)
                     case "Assistance Number":
-                        self.fill_field(widget, str(pmi[0]))
+                        self.fill_field(widget, pmi[0])
                     case "Birthdate": self.fill_field(widget, dob[0])
                     case "Gender": self.fill_field(widget, gender[0])
                     case "Primary DiagnosisReason for Admission": self.fill_field(widget, prim_dx[0])
@@ -104,11 +104,11 @@ class OutputPDFs:
                     match widget.field_name:
                         case "name_first": self.fill_field(widget, fname[0])
                         case "name_last": self.fill_field(widget, lname[0])
-                        case "pmi": self.fill_field(widget, str(pmi[0]))
+                        case "pmi": self.fill_field(widget, pmi[0])
                         case "1_former_address": self.fill_field(widget, str_address[0])
                         case "1_former_city": self.fill_field(widget, city[0])
                         case "1_former_state": self.fill_field(widget, state[0])
-                        case "1_former_zip": self.fill_field(widget, str(zip[0]))
+                        case "1_former_zip": self.fill_field(widget, zip[0])
 
                         # case "name": self.fill_field(widget, full_name[0])
                         # case "address": self.fill_field(widget, str_address[0])
@@ -150,7 +150,7 @@ class OutputPDFs:
 
                             widget = self.fill_field(widget, full_name)
                         case "pat_id":
-                            widget = self.fill_field(widget, str(pcc_id[0]))
+                            widget = self.fill_field(widget, pcc_id[0])
                         case "lcd":
                             widget = self.fill_field(widget, lcd[0])
 
@@ -175,7 +175,7 @@ class OutputPDFs:
                             if full_name == False: continue
 
                             self.fill_field(widget, full_name)
-                        case "ben_id": self.fill_field(widget, str(pcc_id[0]))
+                        case "ben_id": self.fill_field(widget, pcc_id[0])
                         case "ben_lcd_plus1":
                             eff_date = datetime.datetime.strptime(lcd[0], "%m/%d/%Y") + timedelta(days = 1)
                             self.fill_field(widget, datetime.datetime.strftime(eff_date, "%#m/%#d/%Y"))
@@ -188,7 +188,7 @@ class OutputPDFs:
     # Fills the relevant widget's field with the correct text from the user
     def fill_field(self, widget, value):
         if widget.field_value == None: widget.field_value = ""
-        else: widget.field_value = value
+        else: widget.field_value = str(value)
 
         widget.update()
 
