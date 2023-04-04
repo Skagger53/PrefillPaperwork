@@ -187,6 +187,8 @@ class OutputPDFs:
 
     # Fills the relevant widget's field with the correct text from the user
     def fill_field(self, widget, value):
+        if value == False: value = ""
+
         if widget.field_value == None: widget.field_value = ""
         else: widget.field_value = str(value)
 

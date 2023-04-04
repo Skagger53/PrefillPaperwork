@@ -154,7 +154,7 @@ class CollectData:
                         allow_exit = True
                     )
                     if data_point[0] == False: return
-                    data_point[0] = int(user_input)
+                    data_point[0] = str(user_input.strip())
                     return
 
                 data_point[0] = self.data_validation.validate_user_input_num(
