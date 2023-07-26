@@ -99,6 +99,9 @@ class OutputPDFs:
             # Setting up full_name, used in some fields and for filename (if None, filename is generated based on date/time)
             full_name = self.combine_flnames(fname, lname, f_then_l = False)
 
+            if type(fname[0]) == bool: fname[0] = ""
+            if type(lname[0]) == bool: lname[0] = ""
+
             for page in pdf_doc:
                 for widget in page.widgets():
                     match widget.field_name:
